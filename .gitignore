@@ -1,0 +1,60 @@
+# Separate repository - do not commit to main repo
+/tms_api/
+
+# Flutter specific
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+.idea/
+
+# Config files with sensitive data
+lib/config/env_config.dart
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+.ios/
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/debug/
+android/app/release/
+.android/
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+.macos/
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/ephemeral/
+.linux/
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/ephemeral/
+.windows/
+
+# Web
+web/
+build/web/
+
+# Logs
+*.log
+flutter_*.log
+
+# Environment files
+.env
+*.env
+
+# OS specific
+.DS_Store
+Thumbs.db
+

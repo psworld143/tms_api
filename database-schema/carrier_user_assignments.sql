@@ -16,18 +16,18 @@ CREATE TABLE carrier_user_assignments (
     
     -- Assignment Details
     role_in_carrier VARCHAR(50) DEFAULT 'User' COMMENT 'Role: Admin, Manager, Dispatcher, Driver, etc.',
-    is_primary_contact BOOLEAN DEFAULT FALSE COMMENT 'Is this user the primary contact?',
+    is_primary_contact TINYINT(1) DEFAULT 0 COMMENT 'Is this user the primary contact?',
     department VARCHAR(100) NULL COMMENT 'Department within carrier: Operations, Dispatch, Safety, etc.',
     
     -- Permissions
-    can_manage_loads BOOLEAN DEFAULT FALSE,
-    can_manage_drivers BOOLEAN DEFAULT FALSE,
-    can_view_reports BOOLEAN DEFAULT TRUE,
-    can_manage_billing BOOLEAN DEFAULT FALSE,
+    can_manage_loads TINYINT(1) DEFAULT 0,
+    can_manage_drivers TINYINT(1) DEFAULT 0,
+    can_view_reports TINYINT(1) DEFAULT 1,
+    can_manage_billing TINYINT(1) DEFAULT 0,
     
     -- Status
     status VARCHAR(20) DEFAULT 'active' COMMENT 'active, inactive, suspended',
-    assignment_date DATE DEFAULT CURRENT_DATE,
+    assignment_date DATE NULL,
     start_date DATE NULL,
     end_date DATE NULL,
     
@@ -39,39 +39,45 @@ CREATE TABLE carrier_user_assignments (
     
     -- Constraints
     UNIQUE KEY unique_carrier_user (carrier_id, user_id),
-    FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
     
     -- Indexes for performance
     INDEX idx_carrier_id (carrier_id),
     INDEX idx_user_id (user_id),
+    INDEX idx_assigned_by (assigned_by),
     INDEX idx_status (status),
     INDEX idx_role (role_in_carrier),
     INDEX idx_assignment_date (assignment_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Manages user assignments to carrier organizations';
 
+-- Add foreign key constraints after table creation
+-- Note: Uncomment these only after ensuring carriers and users tables exist
+-- and their id columns are INT type
+ALTER TABLE carrier_user_assignments
+    ADD CONSTRAINT fk_cua_carrier FOREIGN KEY (carrier_id) REFERENCES carriers(id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_cua_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_cua_assigned_by FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL;
+
 -- =====================================================
 -- Sample Data for Testing
 -- =====================================================
 
 -- Assign some users to carriers (assuming users and carriers exist)
-INSERT INTO carrier_user_assignments (carrier_id, user_id, role_in_carrier, is_primary_contact, department, can_manage_loads, can_manage_drivers, can_view_reports, can_manage_billing, assigned_by, notes) VALUES
+INSERT INTO carrier_user_assignments (carrier_id, user_id, role_in_carrier, is_primary_contact, department, can_manage_loads, can_manage_drivers, can_view_reports, can_manage_billing, assignment_date, assigned_by, notes) VALUES
 -- User 1 to Carrier 1 (Swift Logistics)
-(1, 2, 'Carrier Admin', TRUE, 'Operations', TRUE, TRUE, TRUE, TRUE, 1, 'Primary administrator for Swift Logistics'),
+(1, 2, 'Carrier Admin', 1, 'Operations', 1, 1, 1, 1, CURDATE(), 1, 'Primary administrator for Swift Logistics'),
 
 -- User 2 to Carrier 1 (Swift Logistics)
-(1, 3, 'Dispatcher', FALSE, 'Dispatch', TRUE, FALSE, TRUE, FALSE, 1, 'Main dispatcher for Swift Logistics'),
+(1, 3, 'Dispatcher', 0, 'Dispatch', 1, 0, 1, 0, CURDATE(), 1, 'Main dispatcher for Swift Logistics'),
 
 -- User 3 to Carrier 2 (Freight Masters)
-(2, 4, 'Carrier Admin', TRUE, 'Management', TRUE, TRUE, TRUE, TRUE, 1, 'Primary contact for Freight Masters'),
+(2, 4, 'Carrier Admin', 1, 'Management', 1, 1, 1, 1, CURDATE(), 1, 'Primary contact for Freight Masters'),
 
 -- User 4 to Carrier 3 (National Freight Solutions)
-(3, 5, 'Manager', FALSE, 'Operations', TRUE, TRUE, TRUE, FALSE, 1, 'Operations manager'),
+(3, 5, 'Manager', 0, 'Operations', 1, 1, 1, 0, CURDATE(), 1, 'Operations manager'),
 
 -- User 5 to Carrier 4 (Express Transport)
-(4, 6, 'Dispatcher', FALSE, 'Dispatch', TRUE, FALSE, TRUE, FALSE, 1, 'Dispatcher for Express Transport');
+(4, 6, 'Dispatcher', 0, 'Dispatch', 1, 0, 1, 0, CURDATE(), 1, 'Dispatcher for Express Transport');
 
 -- =====================================================
 -- Useful Queries

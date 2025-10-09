@@ -68,15 +68,10 @@ try {
                 cua.created_at as assigned_at,
                 u.id as user_id,
                 u.name as user_name,
-                u.first_name,
-                u.last_name,
                 u.email,
                 u.phone,
                 u.role as user_role,
                 u.status as user_status,
-                u.department as user_department,
-                u.location,
-                u.avatar,
                 ab.name as assigned_by_name
             FROM carrier_user_assignments cua
             JOIN users u ON cua.user_id = u.id

@@ -38,9 +38,24 @@ try {
                 $tenantPdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
                 // Swap connection to tenant DB
                 $pdo = $tenantPdo;
+            } else {
+                // If a tenant DB was explicitly requested but not found, stop here
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Requested tenant database not found: ' . $requestedDb
+                ]);
+                exit;
             }
         } catch (Exception $e) {
-            // If lookup/connect fails, silently continue with main DB
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Failed to connect to tenant database: ' . $e->getMessage()
+            ]);
+            exit;
         }
     }
 

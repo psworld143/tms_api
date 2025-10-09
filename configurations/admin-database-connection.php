@@ -1,11 +1,15 @@
 <?php
 // Admin Database Connection for Database Management Operations
-// This connection has CREATE DATABASE, DROP DATABASE privileges
+// This connection needs CREATE DATABASE, DROP DATABASE privileges
 // Use ONLY for database setup operations, not for regular queries
 
 $servername = "localhost";
-$admin_username = "root"; // Use root or admin user with CREATE DATABASE privilege
-$admin_password = ""; // Set your MySQL root password here
+
+// Try to use the same credentials as regular connection
+// If the user has CREATE DATABASE privileges, this will work
+// Otherwise, you need to grant privileges or use root
+$admin_username = "pms_nexus_tms";
+$admin_password = "020894TMS25";
 $dbname = "pms_nexus_tms"; // Source database to clone from
 
 try {
@@ -20,10 +24,12 @@ try {
     $source_pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 
 } catch (PDOException $e) {
+    http_response_code(500);
     die(json_encode([
         "status" => "error",
         "message" => "Admin connection failed: " . $e->getMessage(),
-        "help" => "Please set up admin credentials in configurations/admin-database-connection.php"
+        "help" => "Please grant CREATE DATABASE privilege to user '{$admin_username}' or update admin credentials in configurations/admin-database-connection.php",
+        "sql_command" => "GRANT CREATE, DROP ON *.* TO '{$admin_username}'@'localhost'; FLUSH PRIVILEGES;"
     ]));
 }
 ?>

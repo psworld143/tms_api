@@ -292,6 +292,7 @@ try {
             `carrier_id` INT NULL,
             `carrier_name` VARCHAR(255) NOT NULL,
             `database_name` VARCHAR(128) NOT NULL,
+            `db_host` VARCHAR(128) NOT NULL DEFAULT 'localhost',
             `db_username` VARCHAR(128) NOT NULL,
             `db_password` VARCHAR(256) NOT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -303,10 +304,11 @@ try {
 
         // Insert or update credentials
         $upsertSql = "INSERT INTO `{$sourceDatabaseName}`.`carrier_databases`
-            (carrier_id, carrier_name, database_name, db_username, db_password)
-            VALUES (:carrier_id, :carrier_name, :database_name, :db_username, :db_password)
+            (carrier_id, carrier_name, database_name, db_host, db_username, db_password)
+            VALUES (:carrier_id, :carrier_name, :database_name, :db_host, :db_username, :db_password)
             ON DUPLICATE KEY UPDATE 
                 carrier_name = VALUES(carrier_name),
+                db_host = VALUES(db_host),
                 db_username = VALUES(db_username),
                 db_password = VALUES(db_password)";
         $upsertStmt = $admin_pdo->prepare($upsertSql);
@@ -314,6 +316,7 @@ try {
             ':carrier_id' => $carrierId,
             ':carrier_name' => $carrierName,
             ':database_name' => $newDatabaseName,
+            ':db_host' => $servername,
             ':db_username' => $admin_username,
             ':db_password' => $admin_password
         ]);

@@ -178,8 +178,8 @@ try {
 // Auto-generated on " . date('Y-m-d H:i:s') . "
 
 \$servername = \"localhost\";
-\$username = \"{$username}\";
-\$password = \"{$password}\";
+\$username = \"{$admin_username}\";
+\$password = \"{$admin_password}\";
 \$dbname = \"{$newDatabaseName}\";
 
 try {

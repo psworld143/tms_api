@@ -63,13 +63,13 @@ try {
     }
     
     if (isset($input['is_primary_contact'])) {
-        $isPrimary = (bool)$input['is_primary_contact'];
+        $isPrimary = $input['is_primary_contact'] ? 1 : 0;
         $updateFields[] = "is_primary_contact = :is_primary_contact";
         $params[':is_primary_contact'] = $isPrimary;
         
         // If setting as primary, remove primary flag from other users in same carrier
         if ($isPrimary) {
-            $removePrimary = $pdo->prepare("UPDATE carrier_user_assignments SET is_primary_contact = FALSE WHERE carrier_id = :carrier_id AND id != :id");
+            $removePrimary = $pdo->prepare("UPDATE carrier_user_assignments SET is_primary_contact = 0 WHERE carrier_id = :carrier_id AND id != :id");
             $removePrimary->execute([
                 ':carrier_id' => $existing['carrier_id'],
                 ':id' => $assignmentId
@@ -84,22 +84,22 @@ try {
     
     if (isset($input['can_manage_loads'])) {
         $updateFields[] = "can_manage_loads = :can_manage_loads";
-        $params[':can_manage_loads'] = (bool)$input['can_manage_loads'];
+        $params[':can_manage_loads'] = $input['can_manage_loads'] ? 1 : 0;
     }
     
     if (isset($input['can_manage_drivers'])) {
         $updateFields[] = "can_manage_drivers = :can_manage_drivers";
-        $params[':can_manage_drivers'] = (bool)$input['can_manage_drivers'];
+        $params[':can_manage_drivers'] = $input['can_manage_drivers'] ? 1 : 0;
     }
     
     if (isset($input['can_view_reports'])) {
         $updateFields[] = "can_view_reports = :can_view_reports";
-        $params[':can_view_reports'] = (bool)$input['can_view_reports'];
+        $params[':can_view_reports'] = $input['can_view_reports'] ? 1 : 0;
     }
     
     if (isset($input['can_manage_billing'])) {
         $updateFields[] = "can_manage_billing = :can_manage_billing";
-        $params[':can_manage_billing'] = (bool)$input['can_manage_billing'];
+        $params[':can_manage_billing'] = $input['can_manage_billing'] ? 1 : 0;
     }
     
     if (isset($input['status'])) {

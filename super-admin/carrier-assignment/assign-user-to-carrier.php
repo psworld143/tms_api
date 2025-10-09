@@ -41,12 +41,12 @@ try {
     $carrierId = intval($input['carrier_id']);
     $userId = intval($input['user_id']);
     $roleInCarrier = $input['role_in_carrier'] ?? 'User';
-    $isPrimaryContact = isset($input['is_primary_contact']) ? (bool)$input['is_primary_contact'] : false;
+    $isPrimaryContact = isset($input['is_primary_contact']) ? ($input['is_primary_contact'] ? 1 : 0) : 0;
     $department = $input['department'] ?? null;
-    $canManageLoads = isset($input['can_manage_loads']) ? (bool)$input['can_manage_loads'] : false;
-    $canManageDrivers = isset($input['can_manage_drivers']) ? (bool)$input['can_manage_drivers'] : false;
-    $canViewReports = isset($input['can_view_reports']) ? (bool)$input['can_view_reports'] : true;
-    $canManageBilling = isset($input['can_manage_billing']) ? (bool)$input['can_manage_billing'] : false;
+    $canManageLoads = isset($input['can_manage_loads']) ? ($input['can_manage_loads'] ? 1 : 0) : 0;
+    $canManageDrivers = isset($input['can_manage_drivers']) ? ($input['can_manage_drivers'] ? 1 : 0) : 0;
+    $canViewReports = isset($input['can_view_reports']) ? ($input['can_view_reports'] ? 1 : 0) : 1;
+    $canManageBilling = isset($input['can_manage_billing']) ? ($input['can_manage_billing'] ? 1 : 0) : 0;
     $status = $input['status'] ?? 'active';
     $startDate = $input['start_date'] ?? null;
     $endDate = $input['end_date'] ?? null;
@@ -96,7 +96,7 @@ try {
     
     // If setting as primary contact, remove primary flag from other users
     if ($isPrimaryContact) {
-        $removePrimary = $pdo->prepare("UPDATE carrier_user_assignments SET is_primary_contact = FALSE WHERE carrier_id = :carrier_id");
+        $removePrimary = $pdo->prepare("UPDATE carrier_user_assignments SET is_primary_contact = 0 WHERE carrier_id = :carrier_id");
         $removePrimary->execute([':carrier_id' => $carrierId]);
     }
     

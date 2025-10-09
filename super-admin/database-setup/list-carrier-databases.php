@@ -14,7 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require __DIR__ . '/../../configurations/database-connection.php';
+// Use admin connection for database listing operations
+require __DIR__ . '/../../configurations/admin-database-connection.php';
 
 // Only allow GET requests
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -35,7 +36,7 @@ try {
               AND SCHEMA_NAME != :main_db
               ORDER BY SCHEMA_NAME";
     
-    $stmt = $pdo->prepare($query);
+    $stmt = $admin_pdo->prepare($query);
     $stmt->execute([':main_db' => $dbname]);
     $databases = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
@@ -55,7 +56,7 @@ try {
                            WHERE TABLE_SCHEMA = :dbname
                            AND TABLE_TYPE = 'BASE TABLE'";
         
-        $tableStmt = $pdo->prepare($tableCountQuery);
+        $tableStmt = $admin_pdo->prepare($tableCountQuery);
         $tableStmt->execute([':dbname' => $dbName]);
         $tableCount = $tableStmt->fetch(PDO::FETCH_ASSOC)['table_count'];
         
@@ -65,7 +66,7 @@ try {
                       FROM INFORMATION_SCHEMA.TABLES 
                       WHERE TABLE_SCHEMA = :dbname";
         
-        $sizeStmt = $pdo->prepare($sizeQuery);
+        $sizeStmt = $admin_pdo->prepare($sizeQuery);
         $sizeStmt->execute([':dbname' => $dbName]);
         $sizeData = $sizeStmt->fetch(PDO::FETCH_ASSOC);
         $sizeMb = $sizeData['size_mb'] ?? 0;

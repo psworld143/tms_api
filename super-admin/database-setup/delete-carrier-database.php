@@ -14,7 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require __DIR__ . '/../../configurations/database-connection.php';
+// Use admin connection for database deletion operations
+require __DIR__ . '/../../configurations/admin-database-connection.php';
 
 // Only allow DELETE requests
 if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
@@ -60,7 +61,7 @@ try {
     
     // Check if database exists
     $checkQuery = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = :dbname";
-    $checkStmt = $pdo->prepare($checkQuery);
+    $checkStmt = $admin_pdo->prepare($checkQuery);
     $checkStmt->execute([':dbname' => $databaseName]);
     
     if ($checkStmt->rowCount() === 0) {
@@ -78,13 +79,13 @@ try {
                   FROM INFORMATION_SCHEMA.TABLES 
                   WHERE TABLE_SCHEMA = :dbname";
     
-    $sizeStmt = $pdo->prepare($sizeQuery);
+    $sizeStmt = $admin_pdo->prepare($sizeQuery);
     $sizeStmt->execute([':dbname' => $databaseName]);
     $dbInfo = $sizeStmt->fetch(PDO::FETCH_ASSOC);
     
     // Drop the database
     $dropQuery = "DROP DATABASE `{$databaseName}`";
-    $pdo->exec($dropQuery);
+    $admin_pdo->exec($dropQuery);
     
     // Delete configuration file if it exists
     $carrierSlug = str_replace('tms_', '', $databaseName);

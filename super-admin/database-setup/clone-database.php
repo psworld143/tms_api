@@ -14,7 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require __DIR__ . '/../../configurations/database-connection.php';
+// Use admin connection for database creation operations
+require __DIR__ . '/../../configurations/admin-database-connection.php';
 
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -64,7 +65,7 @@ try {
     
     // Step 1: Check if database already exists
     $checkDbQuery = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = :dbname";
-    $checkStmt = $pdo->prepare($checkDbQuery);
+    $checkStmt = $admin_pdo->prepare($checkDbQuery);
     $checkStmt->execute([':dbname' => $newDatabaseName]);
     
     if ($checkStmt->rowCount() > 0) {
@@ -77,7 +78,7 @@ try {
     
     // Step 2: Create new database
     $createDbQuery = "CREATE DATABASE `{$newDatabaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-    $pdo->exec($createDbQuery);
+    $admin_pdo->exec($createDbQuery);
     
     // Step 3: Get all tables from source database
     $getTablesQuery = "SELECT TABLE_NAME 
@@ -86,7 +87,7 @@ try {
                        AND TABLE_TYPE = 'BASE TABLE'
                        ORDER BY TABLE_NAME";
     
-    $tablesStmt = $pdo->prepare($getTablesQuery);
+    $tablesStmt = $source_pdo->prepare($getTablesQuery);
     $tablesStmt->execute([':dbname' => $sourceDatabaseName]);
     $tables = $tablesStmt->fetchAll(PDO::FETCH_COLUMN);
     
@@ -105,7 +106,7 @@ try {
     foreach ($tables as $tableName) {
         try {
             // Get CREATE TABLE statement
-            $showCreateStmt = $pdo->query("SHOW CREATE TABLE `{$sourceDatabaseName}`.`{$tableName}`");
+            $showCreateStmt = $source_pdo->query("SHOW CREATE TABLE `{$sourceDatabaseName}`.`{$tableName}`");
             $createTableRow = $showCreateStmt->fetch(PDO::FETCH_ASSOC);
             
             if (!$createTableRow) {
@@ -123,7 +124,7 @@ try {
             );
             
             // Execute CREATE TABLE in new database
-            $pdo->exec($createTableSQL);
+            $admin_pdo->exec($createTableSQL);
             $clonedTables[] = $tableName;
             
         } catch (PDOException $e) {
@@ -138,7 +139,7 @@ try {
                       AND TABLE_TYPE = 'VIEW'
                       ORDER BY TABLE_NAME";
     
-    $viewsStmt = $pdo->prepare($getViewsQuery);
+    $viewsStmt = $source_pdo->prepare($getViewsQuery);
     $viewsStmt->execute([':dbname' => $sourceDatabaseName]);
     $views = $viewsStmt->fetchAll(PDO::FETCH_COLUMN);
     
@@ -147,7 +148,7 @@ try {
     foreach ($views as $viewName) {
         try {
             // Get CREATE VIEW statement
-            $showCreateStmt = $pdo->query("SHOW CREATE VIEW `{$sourceDatabaseName}`.`{$viewName}`");
+            $showCreateStmt = $source_pdo->query("SHOW CREATE VIEW `{$sourceDatabaseName}`.`{$viewName}`");
             $createViewRow = $showCreateStmt->fetch(PDO::FETCH_ASSOC);
             
             if ($createViewRow) {
@@ -163,7 +164,7 @@ try {
                 // Update any references to old database
                 $createViewSQL = str_replace("`{$sourceDatabaseName}`.", "`{$newDatabaseName}`.", $createViewSQL);
                 
-                $pdo->exec($createViewSQL);
+                $admin_pdo->exec($createViewSQL);
                 $clonedViews[] = $viewName;
             }
         } catch (PDOException $e) {

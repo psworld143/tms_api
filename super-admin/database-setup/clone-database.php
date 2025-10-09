@@ -40,6 +40,7 @@ try {
     }
     
     $carrierName = trim($input['carrier_name']);
+    $carrierId = isset($input['carrier_id']) ? intval($input['carrier_id']) : null; // Optional; used to copy users
     
     // Sanitize carrier name for database name
     // Convert to lowercase, replace spaces and special characters with underscores
@@ -200,6 +201,89 @@ try {
     $configFile = $configDir . "{$sanitizedName}-db-config.php";
     file_put_contents($configFile, $configContent);
     
+    // Optional Step 7: If carrier_id provided, copy assigned users into the new database
+    $copiedUsers = 0;
+    $copyWarnings = [];
+    if (!empty($carrierId)) {
+        try {
+            // Ensure destination users table exists
+            $destUsersCheck = $admin_pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'users'");
+            $destUsersCheck->execute([':db' => $newDatabaseName]);
+            $destUsersExists = $destUsersCheck->fetchColumn() > 0;
+
+            if ($destUsersExists) {
+                // Get destination users table columns
+                $destColsStmt = $admin_pdo->query("SHOW COLUMNS FROM `{$newDatabaseName}`.`users`");
+                $destColumns = $destColsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                // Fetch assigned users from source database (admin DB)
+                $assignedUsersSql = "SELECT 
+                        u.id as source_user_id,
+                        u.name,
+                        u.email,
+                        u.password,
+                        COALESCE(cua.role_in_carrier, u.role) AS role,
+                        u.status,
+                        u.phone,
+                        u.department,
+                        u.location,
+                        u.notes
+                    FROM carrier_user_assignments cua
+                    JOIN users u ON u.id = cua.user_id
+                    WHERE cua.carrier_id = :carrier_id
+                      AND cua.status = 'active'";
+                $assignedStmt = $source_pdo->prepare($assignedUsersSql);
+                $assignedStmt->execute([':carrier_id' => $carrierId]);
+                $assignedUsers = $assignedStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($assignedUsers)) {
+                    foreach ($assignedUsers as $userRow) {
+                        // Build dynamic column/value lists based on destination columns
+                        $insertableColumns = [];
+                        $placeholders = [];
+                        $params = [];
+
+                        // Common fields we try to insert if present
+                        $fieldMap = [
+                            'name' => $userRow['name'] ?? null,
+                            'email' => $userRow['email'] ?? null,
+                            'password' => $userRow['password'] ?? null,
+                            'role' => $userRow['role'] ?? null,
+                            'status' => $userRow['status'] ?? 'active',
+                            'phone' => $userRow['phone'] ?? null,
+                            'department' => $userRow['department'] ?? null,
+                            'location' => $userRow['location'] ?? null,
+                            'notes' => $userRow['notes'] ?? null,
+                        ];
+
+                        foreach ($fieldMap as $col => $val) {
+                            if (in_array($col, $destColumns, true) && $val !== null) {
+                                $insertableColumns[] = "`$col`";
+                                $placeholders[] = ":$col";
+                                $params[":$col"] = $val;
+                            }
+                        }
+
+                        if (!empty($insertableColumns)) {
+                            $insertSql = "INSERT INTO `{$newDatabaseName}`.`users` (" . implode(', ', $insertableColumns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+                            $insStmt = $admin_pdo->prepare($insertSql);
+                            try {
+                                $insStmt->execute($params);
+                                $copiedUsers++;
+                            } catch (PDOException $e) {
+                                $copyWarnings[] = "Failed to copy user '{$userRow['email']}' to '{$newDatabaseName}': " . $e->getMessage();
+                            }
+                        }
+                    }
+                }
+            } else {
+                $copyWarnings[] = "Destination users table not found in '{$newDatabaseName}'. Skipping user copy.";
+            }
+        } catch (Exception $e) {
+            $copyWarnings[] = "Unexpected error while copying users: " . $e->getMessage();
+        }
+    }
+
     // Prepare success response
     $response = [
         "status" => "success",
@@ -213,7 +297,8 @@ try {
             "tables_list" => $clonedTables,
             "views_list" => $clonedViews,
             "config_file" => $configFile,
-            "created_at" => date('Y-m-d H:i:s')
+            "created_at" => date('Y-m-d H:i:s'),
+            "users_copied" => $copiedUsers
         ]
     ];
     
@@ -221,6 +306,14 @@ try {
     if (!empty($errors)) {
         $response["warnings"] = $errors;
         $response["message"] .= " (with some warnings)";
+    }
+
+    // Add copy warnings if any
+    if (!empty($copyWarnings)) {
+        if (!isset($response["warnings"])) {
+            $response["warnings"] = [];
+        }
+        $response["warnings"] = array_merge($response["warnings"], $copyWarnings);
     }
     
     echo json_encode($response, JSON_PRETTY_PRINT);

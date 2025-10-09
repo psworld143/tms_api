@@ -1,7 +1,7 @@
-# Carrier Assignment Module
+# Carrier Users Module
 
 ## Overview
-The Carrier Assignment module manages the assignment of users to carrier organizations. It allows super admins to assign users to specific carriers with defined roles, permissions, and departments.
+The Carrier Users module manages the assignment of users to carrier organizations. It allows super admins to assign users to specific carriers with defined roles, permissions, and departments.
 
 ## Database Schema
 
@@ -132,7 +132,7 @@ GET /get-carrier-assignments.php?carrier_id=1&status=active&page=1&limit=20
 }
 ```
 
-### 3. Get Carrier Users
+### 3. Carrier Users
 **Endpoint:** `get-carrier-users.php`  
 **Method:** GET  
 **Description:** Gets all users assigned to a specific carrier
@@ -338,11 +338,11 @@ Location: `lib/platforms/web/presentation/carrier_assignment_screen.dart`
 ## User Interface
 
 ### Super Admin Navigation
-Access the Carrier Assignment module from the Super Admin sidebar:
+Access the Carrier Users module from the Super Admin sidebar:
 1. Dashboard
 2. User Management
 3. Carrier Management
-4. **Carrier Assignment** ← New module
+4. **Carrier Users** ← New module
 
 ### Key Features
 1. **Carrier Selection:** Click any carrier in the left panel to view assigned users
@@ -430,5 +430,5 @@ curl -X DELETE http://localhost/tms_api/super-admin/carrier-assignment/remove-as
 - Assignment approval workflow
 
 ## Support
-For issues or questions about the Carrier Assignment module, contact the development team or create an issue in the repository.
+For issues or questions about the Carrier Users module, contact the development team or create an issue in the repository.
 

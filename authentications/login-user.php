@@ -36,10 +36,42 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
+        // If Carrier Admin, include dedicated database config if available
+        $dbConfig = null;
+        try {
+            // Attempt to determine carrier_id for this user
+            $carrierId = null;
+            $carrierIdQuery = "SELECT carrier_id FROM carrier_user_assignments WHERE user_id = :uid AND status = 'active' LIMIT 1";
+            $cidStmt = $pdo->prepare($carrierIdQuery);
+            $cidStmt->execute([':uid' => $user['id']]);
+            $cidRow = $cidStmt->fetch(PDO::FETCH_ASSOC);
+            if ($cidRow && isset($cidRow['carrier_id'])) {
+                $carrierId = (int)$cidRow['carrier_id'];
+            }
+
+            if ($carrierId !== null) {
+                // Look up dedicated DB credentials from carrier_databases
+                $dbMetaQuery = "SELECT database_name, db_username, db_password FROM carrier_databases WHERE carrier_id = :carrier_id LIMIT 1";
+                $dbStmt = $pdo->prepare($dbMetaQuery);
+                $dbStmt->execute([':carrier_id' => $carrierId]);
+                $dbMeta = $dbStmt->fetch(PDO::FETCH_ASSOC);
+                if ($dbMeta) {
+                    $dbConfig = [
+                        'database_name' => $dbMeta['database_name'],
+                        'db_username' => $dbMeta['db_username'],
+                        'db_password' => $dbMeta['db_password'],
+                    ];
+                }
+            }
+        } catch (Exception $e) {
+            // Ignore db config errors to not block auth
+        }
+
         echo json_encode([
             "status" => "success",
             "message" => "Login successful.",
-            "user" => $user
+            "user" => $user,
+            "carrier_db" => $dbConfig
         ]);
     } else {
         echo json_encode([

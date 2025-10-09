@@ -284,6 +284,43 @@ try {
         }
     }
 
+    // Step 8: Persist database credentials mapping in main database
+    try {
+        // Ensure metadata table exists in main DB
+        $createMetaTableSql = "CREATE TABLE IF NOT EXISTS `{$sourceDatabaseName}`.`carrier_databases` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `carrier_id` INT NULL,
+            `carrier_name` VARCHAR(255) NOT NULL,
+            `database_name` VARCHAR(128) NOT NULL,
+            `db_username` VARCHAR(128) NOT NULL,
+            `db_password` VARCHAR(256) NOT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY `uniq_carrier` (`carrier_id`),
+            UNIQUE KEY `uniq_database_name` (`database_name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        $admin_pdo->exec($createMetaTableSql);
+
+        // Insert or update credentials
+        $upsertSql = "INSERT INTO `{$sourceDatabaseName}`.`carrier_databases`
+            (carrier_id, carrier_name, database_name, db_username, db_password)
+            VALUES (:carrier_id, :carrier_name, :database_name, :db_username, :db_password)
+            ON DUPLICATE KEY UPDATE 
+                carrier_name = VALUES(carrier_name),
+                db_username = VALUES(db_username),
+                db_password = VALUES(db_password)";
+        $upsertStmt = $admin_pdo->prepare($upsertSql);
+        $upsertStmt->execute([
+            ':carrier_id' => $carrierId,
+            ':carrier_name' => $carrierName,
+            ':database_name' => $newDatabaseName,
+            ':db_username' => $admin_username,
+            ':db_password' => $admin_password
+        ]);
+    } catch (Exception $e) {
+        $copyWarnings[] = "Failed to persist carrier DB credentials: " . $e->getMessage();
+    }
+
     // Prepare success response
     $response = [
         "status" => "success",
